@@ -6,16 +6,24 @@
  * LICENSE file in the root directory of this source tree.
  */
 // @remove-on-eject-end
-'use strict';
 
+
+// 常用的文件操作
 const fs = require('fs');
+
+// 路径管理操作
 const path = require('path');
+// 导入文件管理
 const paths = require('./paths');
 
 // Make sure that including paths.js after env.js will read .env variables.
+// 删除require引入的缓存 清除node的缓存
 delete require.cache[require.resolve('./paths')];
 
+// 环境变量
 const NODE_ENV = process.env.NODE_ENV;
+
+// 如果环境变量不存在，则需要抛出错误
 if (!NODE_ENV) {
   throw new Error(
     'The NODE_ENV environment variable is required but was not specified.'
@@ -23,13 +31,21 @@ if (!NODE_ENV) {
 }
 
 // https://github.com/bkeepers/dotenv#what-other-env-files-can-i-use
+/**
+ * 通过filter(Boolean)过滤掉为false的值
+ */
 const dotenvFiles = [
+  // .env.${环境变量（dev，pro）}.local
   `${paths.dotenv}.${NODE_ENV}.local`,
   // Don't include `.env.local` for `test` environment
   // since normally you expect tests to produce the same
   // results for everyone
+  // .env.local
   NODE_ENV !== 'test' && `${paths.dotenv}.local`,
+  // .env.${dev,pro}
   `${paths.dotenv}.${NODE_ENV}`,
+
+  // .env
   paths.dotenv,
 ].filter(Boolean);
 
@@ -38,9 +54,13 @@ const dotenvFiles = [
 // that have already been set.  Variable expansion is supported in .env files.
 // https://github.com/motdotla/dotenv
 // https://github.com/motdotla/dotenv-expand
+// 为已经存在的环境变量中， 去添加对应的环境变量
 dotenvFiles.forEach(dotenvFile => {
+
   if (fs.existsSync(dotenvFile)) {
+    // 通过dotenv-expand的方式去包裹
     require('dotenv-expand')(
+      // 导入对应的环境变量的配置
       require('dotenv').config({
         path: dotenvFile,
       })
@@ -57,7 +77,9 @@ dotenvFiles.forEach(dotenvFile => {
 // Otherwise, we risk importing Node.js core modules into an app instead of webpack shims.
 // https://github.com/facebook/create-react-app/issues/1023#issuecomment-265344421
 // We also resolve them to make sure all tools using them work consistently.
+// 获取当前node的地址
 const appDirectory = fs.realpathSync(process.cwd());
+// 定义node的环境变量
 process.env.NODE_PATH = (process.env.NODE_PATH || '')
   .split(path.delimiter)
   .filter(folder => folder && !path.isAbsolute(folder))
@@ -68,6 +90,7 @@ process.env.NODE_PATH = (process.env.NODE_PATH || '')
 // injected into the application via DefinePlugin in webpack configuration.
 const REACT_APP = /^REACT_APP_/i;
 
+// 注入环境变量到process.env
 function getClientEnvironment(publicUrl) {
   const raw = Object.keys(process.env)
     .filter(key => REACT_APP.test(key))
